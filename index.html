@@ -1556,9 +1556,12 @@ function renderTrain(){
   const letters=['A','B','C','D'];
   const area=document.getElementById('train-area');
   area.innerHTML=`
-    <div class="ex-hd">
-      <div class="ex-prog">Capítulo ${s.ch} · Questão ${s.qi+1} de ${s.qs.length}</div>
-      <div style="font-size:14px;color:var(--t2)">Acertos: <strong style="color:var(--gr)">${s.score}</strong> / ${s.qi}</div>
+    <div class="ex-hd" style="flex-direction:column;align-items:stretch;gap:12px">
+      <button type="button" class="fb" onclick="backToTrainSel()" style="align-self:flex-start">&#8592; Voltar aos capítulos</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;width:100%">
+        <div class="ex-prog">Capítulo ${s.ch} · Questão ${s.qi+1} de ${s.qs.length}</div>
+        <div style="font-size:14px;color:var(--t2)">Acertos: <strong style="color:var(--gr)">${s.score}</strong> / ${s.qi}</div>
+      </div>
     </div>
     <div class="ex-q">
       <div class="ex-qt">${s.qi+1}. ${q.q}</div>
