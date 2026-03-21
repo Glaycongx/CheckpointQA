@@ -1,9 +1,9 @@
 // ============================================================
-// CTFL 4.0 — Service Worker
+// Checkpoint QA — Service Worker
 // Cache-first strategy: serve do cache, atualiza em background
 // ============================================================
 
-const CACHE_NAME = 'ctfl-v1.2';
+const CACHE_NAME = 'checkpoint-qa-v1.0';
 const OFFLINE_PAGE = './index.html';
 
 const ASSETS_TO_CACHE = [

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de Ícones — Checkpoint QA</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f1117; color: #e8eaf0; padding: 32px; max-width: 800px; margin: 0 auto; }
+  h1 { font-size: 22px; margin-bottom: 4px; background: linear-gradient(135deg, #6c63ff, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  p { color: #9ca3b4; font-size: 14px; margin-bottom: 28px; }
+  .previews { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 32px; align-items: flex-end; }
+  .preview-item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .preview-item span { font-size: 11px; color: #6b7280; }
+  canvas { border-radius: 12px; display: block; }
+  button { background: #6c63ff; color: #fff; border: none; padding: 12px 28px; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; }
+  button:hover { background: #8b83ff; }
+  .status { margin-top: 16px; font-size: 13px; color: #10b981; }
+</style>
+</head>
+<body>
+
+<h1>Gerador de Ícones — Checkpoint QA</h1>
+<p>Pré-visualização dos ícones que serão gerados. Clique em "Baixar Todos" para salvar na pasta <code>icons/</code>.</p>
+
+<div class="previews" id="previews"></div>
+
+<button onclick="downloadAll()">&#11015; Baixar Todos os Ícones</button>
+<div class="status" id="status"></div>
+
+<script>
+const SIZES = [72, 96, 128, 144, 152, 192, 384, 512];
+const MASKABLE_SIZES = [192, 512];
+
+function drawIcon(canvas, size, maskable = false) {
+  const ctx = canvas.getContext('2d');
+  canvas.width = size;
+  canvas.height = size;
+
+  const padding = maskable ? size * 0.15 : 0;
+  const radius = maskable ? size * 0.18 : size * 0.22;
+
+  // Background gradient
+  const grad = ctx.createLinearGradient(0, 0, size, size);
+  grad.addColorStop(0, '#4f46e5');
+  grad.addColorStop(0.5, '#6c63ff');
+  grad.addColorStop(1, '#06b6d4');
+
+  // Rounded rect background
+  ctx.beginPath();
+  roundRect(ctx, 0, 0, size, size, maskable ? 0 : radius);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Inner card (subtle)
+  const innerPad = size * 0.12;
+  const innerRadius = size * 0.14;
+  ctx.beginPath();
+  roundRect(ctx, innerPad, innerPad, size - innerPad * 2, size - innerPad * 2, innerRadius);
+  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  ctx.fill();
+
+  // Checkmark symbol
+  const cx = size / 2;
+  const cy = size * 0.38;
+  const checkSize = size * 0.22;
+
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = size * 0.07;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx - checkSize * 0.6, cy);
+  ctx.lineTo(cx - checkSize * 0.05, cy + checkSize * 0.55);
+  ctx.lineTo(cx + checkSize * 0.8, cy - checkSize * 0.5);
+  ctx.stroke();
+
+  // "QA" text
+  const fontSize = size * 0.19;
+  ctx.fillStyle = '#fff';
+  ctx.font = `700 ${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('QA', cx, size * 0.72);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function renderPreviews() {
+  const container = document.getElementById('previews');
+  const previewSizes = [72, 128, 192, 512];
+
+  previewSizes.forEach(size => {
+    const displaySize = Math.min(size, 96);
+    const canvas = document.createElement('canvas');
+    drawIcon(canvas, size, false);
+
+    const previewCanvas = document.createElement('canvas');
+    previewCanvas.width = displaySize;
+    previewCanvas.height = displaySize;
+    const pCtx = previewCanvas.getContext('2d');
+    pCtx.drawImage(canvas, 0, 0, displaySize, displaySize);
+
+    const item = document.createElement('div');
+    item.className = 'preview-item';
+    item.appendChild(previewCanvas);
+    const label = document.createElement('span');
+    label.textContent = `${size}×${size}`;
+    item.appendChild(label);
+    container.appendChild(item);
+  });
+
+  // Maskable preview
+  const maskCanvas = document.createElement('canvas');
+  drawIcon(maskCanvas, 192, true);
+  const maskPreview = document.createElement('canvas');
+  maskPreview.width = 96;
+  maskPreview.height = 96;
+  maskPreview.getContext('2d').drawImage(maskCanvas, 0, 0, 96, 96);
+  const maskItem = document.createElement('div');
+  maskItem.className = 'preview-item';
+  maskItem.appendChild(maskPreview);
+  const maskLabel = document.createElement('span');
+  maskLabel.textContent = 'maskable';
+  maskItem.appendChild(maskLabel);
+  container.appendChild(maskItem);
+}
+
+function downloadAll() {
+  const status = document.getElementById('status');
+  let count = 0;
+  const total = SIZES.length + MASKABLE_SIZES.length;
+
+  SIZES.forEach(size => {
+    const canvas = document.createElement('canvas');
+    drawIcon(canvas, size, false);
+    const link = document.createElement('a');
+    link.download = `icon-${size}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    count++;
+  });
+
+  MASKABLE_SIZES.forEach(size => {
+    const canvas = document.createElement('canvas');
+    drawIcon(canvas, size, true);
+    const link = document.createElement('a');
+    link.download = `icon-maskable-${size}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    count++;
+  });
+
+  status.textContent = `✓ ${count} ícones baixados. Mova os arquivos para a pasta icons/ do projeto.`;
+}
+
+renderPreviews();
+</script>
+</body>
+</html>

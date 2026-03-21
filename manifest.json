@@ -1,7 +1,7 @@
 {
-  "name": "CTFL Lab — Módulo de Estudos",
-  "short_name": "CTFL Lab",
-  "description": "Plataforma completa de estudos para a certificação ISTQB Certified Tester Foundation Level 4.0. Inclui conteúdo dos 6 capítulos, flashcards, 3 simulados e treino por capítulo.",
+  "name": "Checkpoint QA — Estudos CTFL",
+  "short_name": "Checkpoint QA",
+  "description": "Plataforma independente de estudos para a certificação ISTQB CTFL 4.0. Inclui conteúdo dos 6 capítulos, flashcards, 3 simulados e treino por capítulo. Sem afiliação oficial ao ISTQB ou BSTQB.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
