@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de Ícones — Checkpoint QA</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f1117; color: #e8eaf0; padding: 32px; max-width: 800px; margin: 0 auto; }
+  h1 { font-size: 22px; margin-bottom: 4px; background: linear-gradient(135deg, #6c63ff, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  p { color: #9ca3b4; font-size: 14px; margin-bottom: 28px; }
+  .previews { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 32px; align-items: flex-end; }
+  .preview-item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .preview-item span { font-size: 11px; color: #6b7280; }
+  canvas { border-radius: 12px; display: block; }
+  button { background: #6c63ff; color: #fff; border: none; padding: 12px 28px; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; }
+  button:hover { background: #8b83ff; }
+  .status { margin-top: 16px; font-size: 13px; color: #10b981; }
+</style>
+</head>
+<body>
+
+<h1>Gerador de Ícones — Checkpoint QA</h1>
+<p>Pré-visualização dos ícones que serão gerados. Clique em "Baixar Todos" para salvar na pasta <code>icons/</code>.</p>
+
+<div class="previews" id="previews"></div>
+
+<button onclick="downloadAll()">&#11015; Baixar Todos os Ícones</button>
+<div class="status" id="status"></div>
+
+<script>
+const SIZES = [72, 96, 128, 144, 152, 192, 384, 512];
+const MASKABLE_SIZES = [192, 512];
+
+function drawIcon(canvas, size, maskable = false) {
+  const ctx = canvas.getContext('2d');
+  canvas.width = size;
+  canvas.height = size;
+
+  const radius = maskable ? 0 : size * 0.22;
+  const cx = size / 2;
+
+  // Background gradient (deep blue → purple)
+  const grad = ctx.createLinearGradient(0, 0, size, size);
+  grad.addColorStop(0,   '#1e1b4b');
+  grad.addColorStop(0.5, '#4f46e5');
+  grad.addColorStop(1,   '#7c3aed');
+
+  ctx.beginPath();
+  roundRect(ctx, 0, 0, size, size, radius);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Subtle inner glow at top
+  const glow = ctx.createRadialGradient(cx, size * 0.25, 0, cx, size * 0.25, size * 0.55);
+  glow.addColorStop(0,   'rgba(167,139,250,0.25)');
+  glow.addColorStop(1,   'rgba(167,139,250,0)');
+  ctx.beginPath();
+  roundRect(ctx, 0, 0, size, size, radius);
+  ctx.fillStyle = glow;
+  ctx.fill();
+
+  // ── Open book ───────────────────────────────────────────────
+  const bW  = size * 0.62;   // total book width
+  const bH  = size * 0.38;   // book height
+  const bX  = cx - bW / 2;   // left edge
+  const bY  = size * 0.18;   // top edge
+  const pageR = size * 0.04; // page corner radius
+  const spineW = size * 0.035;
+
+  // Left page
+  ctx.beginPath();
+  roundRect(ctx, bX, bY, bW / 2 - spineW / 2, bH, pageR);
+  ctx.fillStyle = 'rgba(255,255,255,0.92)';
+  ctx.fill();
+
+  // Right page
+  ctx.beginPath();
+  roundRect(ctx, cx + spineW / 2, bY, bW / 2 - spineW / 2, bH, pageR);
+  ctx.fillStyle = 'rgba(255,255,255,0.92)';
+  ctx.fill();
+
+  // Spine shadow (center groove)
+  const spineGrad = ctx.createLinearGradient(cx - spineW, 0, cx + spineW, 0);
+  spineGrad.addColorStop(0,   'rgba(79,70,229,0.7)');
+  spineGrad.addColorStop(0.5, 'rgba(30,27,75,0.9)');
+  spineGrad.addColorStop(1,   'rgba(79,70,229,0.7)');
+  ctx.fillStyle = spineGrad;
+  ctx.fillRect(cx - spineW, bY, spineW * 2, bH);
+
+  // Text lines on left page (3 lines)
+  const lineColor = 'rgba(79,70,229,0.35)';
+  const lx = bX + size * 0.05;
+  const lw = bW / 2 - spineW / 2 - size * 0.1;
+  const lh = size * 0.022;
+  const lGap = size * 0.075;
+  ctx.fillStyle = lineColor;
+  for (let i = 0; i < 3; i++) {
+    const ly = bY + size * 0.07 + i * lGap;
+    const w = i === 2 ? lw * 0.6 : lw;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(lx, ly, w, lh, lh/2) : ctx.fillRect(lx, ly, w, lh);
+    ctx.fill();
+  }
+
+  // Text lines on right page (3 lines)
+  const rx = cx + spineW / 2 + size * 0.05;
+  ctx.fillStyle = lineColor;
+  for (let i = 0; i < 3; i++) {
+    const ly = bY + size * 0.07 + i * lGap;
+    const w = i === 1 ? lw * 0.65 : lw;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(rx, ly, w, lh, lh/2) : ctx.fillRect(rx, ly, w, lh);
+    ctx.fill();
+  }
+
+  // ── "Checkpoint QA" label ────────────────────────────────────
+  const labelY = bY + bH + size * 0.13;
+  const fs1 = size * 0.13;
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
+  ctx.font = `800 ${fs1}px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('Checkpoint', cx, labelY);
+
+  const fs2 = size * 0.155;
+  ctx.font = `900 ${fs2}px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
+  ctx.fillStyle = '#a78bfa';
+  ctx.fillText('QA', cx, labelY + fs1 * 1.1);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function renderPreviews() {
+  const container = document.getElementById('previews');
+  const previewSizes = [72, 128, 192, 512];
+
+  previewSizes.forEach(size => {
+    const displaySize = Math.min(size, 96);
+    const canvas = document.createElement('canvas');
+    drawIcon(canvas, size, false);
+
+    const previewCanvas = document.createElement('canvas');
+    previewCanvas.width = displaySize;
+    previewCanvas.height = displaySize;
+    const pCtx = previewCanvas.getContext('2d');
+    pCtx.drawImage(canvas, 0, 0, displaySize, displaySize);
+
+    const item = document.createElement('div');
+    item.className = 'preview-item';
+    item.appendChild(previewCanvas);
+    const label = document.createElement('span');
+    label.textContent = `${size}×${size}`;
+    item.appendChild(label);
+    container.appendChild(item);
+  });
+
+  // Maskable preview
+  const maskCanvas = document.createElement('canvas');
+  drawIcon(maskCanvas, 192, true);
+  const maskPreview = document.createElement('canvas');
+  maskPreview.width = 96;
+  maskPreview.height = 96;
+  maskPreview.getContext('2d').drawImage(maskCanvas, 0, 0, 96, 96);
+  const maskItem = document.createElement('div');
+  maskItem.className = 'preview-item';
+  maskItem.appendChild(maskPreview);
+  const maskLabel = document.createElement('span');
+  maskLabel.textContent = 'maskable';
+  maskItem.appendChild(maskLabel);
+  container.appendChild(maskItem);
+}
+
+function downloadAll() {
+  const status = document.getElementById('status');
+  let count = 0;
+  const total = SIZES.length + MASKABLE_SIZES.length;
+
+  SIZES.forEach(size => {
+    const canvas = document.createElement('canvas');
+    drawIcon(canvas, size, false);
+    const link = document.createElement('a');
+    link.download = `icon-${size}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    count++;
+  });
+
+  MASKABLE_SIZES.forEach(size => {
+    const canvas = document.createElement('canvas');
+    drawIcon(canvas, size, true);
+    const link = document.createElement('a');
+    link.download = `icon-maskable-${size}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    count++;
+  });
+
+  status.textContent = `✓ ${count} ícones baixados. Mova os arquivos para a pasta icons/ do projeto.`;
+}
+
+renderPreviews();
+</script>
+</body>
+</html>
