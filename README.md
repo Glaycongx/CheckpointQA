@@ -2,7 +2,7 @@
 
 > Plataforma independente de estudos para a certificação **ISTQB Certified Tester Foundation Level (CTFL) v4.0** — instalável como PWA em Android e iOS.
 
-[![GitHub Pages](https://img.shields.io/badge/Live-GitHub%20Pages-6c63ff?style=flat-square)](https://glaycongx.github.io/CTFL-Lab/)
+[![GitHub Pages](https://img.shields.io/badge/Live-GitHub%20Pages-6c63ff?style=flat-square)](https://github.com/Glaycongx/CheckpointQA)
 
 > **Disclaimer:** Projeto independente, sem afiliação oficial ao ISTQB® ou BSTQB. ISTQB® é marca registrada da International Software Testing Qualifications Board. O conteúdo é baseado no Syllabus CTFL v4.0 de uso público, com fins exclusivamente educacionais e não-comerciais.
 
@@ -10,7 +10,7 @@
 
 ## Acesse
 
-👉 **[glaycongx.github.io/CTFL-Lab](https://glaycongx.github.io/CTFL-Lab/)**
+👉 **[glaycongx.github.io/CheckpointQA/](https://github.com/Glaycongx/CheckpointQA)**
 
 ---
 
