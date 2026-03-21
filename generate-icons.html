@@ -36,51 +36,96 @@ function drawIcon(canvas, size, maskable = false) {
   canvas.width = size;
   canvas.height = size;
 
-  const padding = maskable ? size * 0.15 : 0;
-  const radius = maskable ? size * 0.18 : size * 0.22;
+  const radius = maskable ? 0 : size * 0.22;
+  const cx = size / 2;
 
-  // Background gradient
+  // Background gradient (deep blue → purple)
   const grad = ctx.createLinearGradient(0, 0, size, size);
-  grad.addColorStop(0, '#4f46e5');
-  grad.addColorStop(0.5, '#6c63ff');
-  grad.addColorStop(1, '#06b6d4');
+  grad.addColorStop(0,   '#1e1b4b');
+  grad.addColorStop(0.5, '#4f46e5');
+  grad.addColorStop(1,   '#7c3aed');
 
-  // Rounded rect background
   ctx.beginPath();
-  roundRect(ctx, 0, 0, size, size, maskable ? 0 : radius);
+  roundRect(ctx, 0, 0, size, size, radius);
   ctx.fillStyle = grad;
   ctx.fill();
 
-  // Inner card (subtle)
-  const innerPad = size * 0.12;
-  const innerRadius = size * 0.14;
+  // Subtle inner glow at top
+  const glow = ctx.createRadialGradient(cx, size * 0.25, 0, cx, size * 0.25, size * 0.55);
+  glow.addColorStop(0,   'rgba(167,139,250,0.25)');
+  glow.addColorStop(1,   'rgba(167,139,250,0)');
   ctx.beginPath();
-  roundRect(ctx, innerPad, innerPad, size - innerPad * 2, size - innerPad * 2, innerRadius);
-  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  roundRect(ctx, 0, 0, size, size, radius);
+  ctx.fillStyle = glow;
   ctx.fill();
 
-  // Checkmark symbol
-  const cx = size / 2;
-  const cy = size * 0.38;
-  const checkSize = size * 0.22;
+  // ── Open book ───────────────────────────────────────────────
+  const bW  = size * 0.62;   // total book width
+  const bH  = size * 0.38;   // book height
+  const bX  = cx - bW / 2;   // left edge
+  const bY  = size * 0.18;   // top edge
+  const pageR = size * 0.04; // page corner radius
+  const spineW = size * 0.035;
 
-  ctx.strokeStyle = '#fff';
-  ctx.lineWidth = size * 0.07;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
+  // Left page
   ctx.beginPath();
-  ctx.moveTo(cx - checkSize * 0.6, cy);
-  ctx.lineTo(cx - checkSize * 0.05, cy + checkSize * 0.55);
-  ctx.lineTo(cx + checkSize * 0.8, cy - checkSize * 0.5);
-  ctx.stroke();
+  roundRect(ctx, bX, bY, bW / 2 - spineW / 2, bH, pageR);
+  ctx.fillStyle = 'rgba(255,255,255,0.92)';
+  ctx.fill();
 
-  // "QA" text
-  const fontSize = size * 0.19;
-  ctx.fillStyle = '#fff';
-  ctx.font = `700 ${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
+  // Right page
+  ctx.beginPath();
+  roundRect(ctx, cx + spineW / 2, bY, bW / 2 - spineW / 2, bH, pageR);
+  ctx.fillStyle = 'rgba(255,255,255,0.92)';
+  ctx.fill();
+
+  // Spine shadow (center groove)
+  const spineGrad = ctx.createLinearGradient(cx - spineW, 0, cx + spineW, 0);
+  spineGrad.addColorStop(0,   'rgba(79,70,229,0.7)');
+  spineGrad.addColorStop(0.5, 'rgba(30,27,75,0.9)');
+  spineGrad.addColorStop(1,   'rgba(79,70,229,0.7)');
+  ctx.fillStyle = spineGrad;
+  ctx.fillRect(cx - spineW, bY, spineW * 2, bH);
+
+  // Text lines on left page (3 lines)
+  const lineColor = 'rgba(79,70,229,0.35)';
+  const lx = bX + size * 0.05;
+  const lw = bW / 2 - spineW / 2 - size * 0.1;
+  const lh = size * 0.022;
+  const lGap = size * 0.075;
+  ctx.fillStyle = lineColor;
+  for (let i = 0; i < 3; i++) {
+    const ly = bY + size * 0.07 + i * lGap;
+    const w = i === 2 ? lw * 0.6 : lw;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(lx, ly, w, lh, lh/2) : ctx.fillRect(lx, ly, w, lh);
+    ctx.fill();
+  }
+
+  // Text lines on right page (3 lines)
+  const rx = cx + spineW / 2 + size * 0.05;
+  ctx.fillStyle = lineColor;
+  for (let i = 0; i < 3; i++) {
+    const ly = bY + size * 0.07 + i * lGap;
+    const w = i === 1 ? lw * 0.65 : lw;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(rx, ly, w, lh, lh/2) : ctx.fillRect(rx, ly, w, lh);
+    ctx.fill();
+  }
+
+  // ── "Checkpoint QA" label ────────────────────────────────────
+  const labelY = bY + bH + size * 0.13;
+  const fs1 = size * 0.13;
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
+  ctx.font = `800 ${fs1}px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('QA', cx, size * 0.72);
+  ctx.fillText('Checkpoint', cx, labelY);
+
+  const fs2 = size * 0.155;
+  ctx.font = `900 ${fs2}px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
+  ctx.fillStyle = '#a78bfa';
+  ctx.fillText('QA', cx, labelY + fs1 * 1.1);
 }
 
 function roundRect(ctx, x, y, w, h, r) {
