@@ -212,6 +212,20 @@ h4.sh{margin:16px 0 8px;font-size:15px}
 .start-card h3{font-size:24px;font-weight:700;margin-bottom:12px}
 .start-card p{font-size:14px;color:var(--t2);margin-bottom:8px}
 .start-card .start-btn{margin-top:24px;padding:14px 40px;font-size:16px;font-weight:600}
+.ex-hist{margin-top:28px;padding-top:20px;border-top:1px solid var(--bd);text-align:left}
+.ex-hist-hd{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.ex-hist-hd h4{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t3)}
+.ex-hist-sum{font-size:13px;color:var(--t2)}
+.ex-hist-list{max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch}
+.ex-hist-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--bd);font-size:13px}
+.ex-hist-item:last-child{border-bottom:none}
+.ex-hist-meta{color:var(--t2);line-height:1.4}
+.ex-hist-meta strong{color:var(--t1)}
+.ex-hist-badge{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.ex-hist-badge.pass{color:var(--gr)}.ex-hist-badge.fail{color:var(--rd)}
+.ex-hist-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.ex-hist-empty{font-size:13px;color:var(--t3);text-align:center;padding:8px 0}
+.ex-hist-ft{margin-top:12px;text-align:center}
 .ch-sel{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin:24px 0}
 .ch-sel-btn{padding:20px;border-radius:var(--r);border:2px solid var(--bd);background:var(--card);cursor:pointer;transition:all var(--tr);text-align:center}
 .ch-sel-btn:hover{border-color:var(--ac);transform:translateY(-2px)}
@@ -959,6 +973,7 @@ h4.sh{margin:16px 0 8px;font-size:15px}
 <p style="color:var(--t3)">Tempo: 75 minutos · Aprovação: 65% (26/40)</p>
 <label style="display:flex;align-items:center;gap:8px;justify-content:center;margin:16px 0;font-size:14px;color:var(--t2);cursor:pointer"><input type="checkbox" id="ex-shuf-1" style="width:16px;height:16px;cursor:pointer"> Aleatorizar ordem das questões</label>
 <button class="fb pr start-btn" onclick="startExam(0)">Iniciar Simulado</button>
+<div class="ex-hist" id="ex-hist-0"></div>
 </div>
 <div id="ex1-area" class="hdn"></div>
 </div>
@@ -971,6 +986,7 @@ h4.sh{margin:16px 0 8px;font-size:15px}
 <p style="color:var(--t3)">Tempo: 75 minutos · Aprovação: 65% (26/40)</p>
 <label style="display:flex;align-items:center;gap:8px;justify-content:center;margin:16px 0;font-size:14px;color:var(--t2);cursor:pointer"><input type="checkbox" id="ex-shuf-2" style="width:16px;height:16px;cursor:pointer"> Aleatorizar ordem das questões</label>
 <button class="fb pr start-btn" onclick="startExam(1)">Iniciar Simulado</button>
+<div class="ex-hist" id="ex-hist-1"></div>
 </div>
 <div id="ex2-area" class="hdn"></div>
 </div>
@@ -994,6 +1010,7 @@ h4.sh{margin:16px 0 8px;font-size:15px}
 <p style="color:var(--or);font-size:12px;margin-top:8px">Fonte: ISTQB® Certified Tester Foundation Level — Sample Exam Set A v1.0</p>
 <label style="display:flex;align-items:center;gap:8px;justify-content:center;margin:16px 0;font-size:14px;color:var(--t2);cursor:pointer"><input type="checkbox" id="ex-shuf-3" style="width:16px;height:16px;cursor:pointer"> Aleatorizar ordem das questões</label>
 <button class="fb pr start-btn" onclick="startExam(2)">Iniciar Simulado</button>
+<div class="ex-hist" id="ex-hist-2"></div>
 </div>
 <div id="ex3-area" class="hdn"></div>
 </div>
@@ -1423,16 +1440,108 @@ function pf(){const cards=fcCards();ci=(ci-1+cards.length)%cards.length;sf()}
 // ======================== SHUFFLE ========================
 function shuffleArr(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 
+// ======================== EXAM HISTORY (localStorage) ========================
+const EX_HIST_KEY='ctfl_ex_history';
+const EX_HIST_MAX=30;
+const EX_DURATION=75*60;
+function loadExHistory(){
+  try{const d=JSON.parse(localStorage.getItem(EX_HIST_KEY)||'{}');return d&&typeof d==='object'?d:{}}catch(e){return{}}
+}
+function saveExHistory(data){localStorage.setItem(EX_HIST_KEY,JSON.stringify(data))}
+function getExHistory(idx){const list=loadExHistory()[String(idx)];return Array.isArray(list)?list:[]}
+function addExAttempt(idx,attempt){
+  const data=loadExHistory();
+  const key=String(idx);
+  const list=Array.isArray(data[key])?data[key]:[];
+  list.unshift(attempt);
+  data[key]=list.slice(0,EX_HIST_MAX);
+  saveExHistory(data);
+}
+function clearExHistory(idx){
+  if(!confirm('Limpar o histórico deste simulado? Esta ação não pode ser desfeita.'))return;
+  const data=loadExHistory();
+  data[String(idx)]=[];
+  saveExHistory(data);
+  renderExHistory(idx);
+}
+function fmtExDate(iso){
+  try{return new Date(iso).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}catch(e){return iso}
+}
+function fmtExTime(sec){
+  const s=Math.max(0,Math.floor(sec||0));
+  const m=Math.floor(s/60),r=s%60;
+  return String(m).padStart(2,'0')+':'+String(r).padStart(2,'0');
+}
+function resolveExQOrder(idx,qs){
+  const bank=EX[idx]||[];
+  return qs.map(q=>{
+    let i=bank.indexOf(q);
+    if(i>=0)return i;
+    i=bank.findIndex(b=>b&&b.q===q.q&&b.c===q.c);
+    return i;
+  });
+}
+function renderExHistory(idx){
+  const el=document.getElementById('ex-hist-'+idx);
+  if(!el)return;
+  const list=getExHistory(idx);
+  if(!list.length){
+    el.innerHTML='<div class="ex-hist-empty">Nenhuma tentativa salva neste aparelho</div>';
+    return;
+  }
+  const best=Math.max(...list.map(a=>a.pct||0));
+  const visible=list.slice(0,10);
+  el.innerHTML=`
+    <div class="ex-hist-hd">
+      <h4>Histórico</h4>
+      <div class="ex-hist-sum">${list.length} tentativa${list.length===1?'':'s'} · Melhor: <strong style="color:var(--ac)">${best}%</strong></div>
+    </div>
+    <div class="ex-hist-list">${visible.map(a=>`
+      <div class="ex-hist-item">
+        <div class="ex-hist-meta">
+          <div><strong>${a.pct}%</strong> · ${a.correct}/${a.total} · <span class="ex-hist-badge ${a.pass?'pass':'fail'}">${a.pass?'Aprovado':'Reprovado'}</span></div>
+          <div style="font-size:12px;color:var(--t3)">${fmtExDate(a.at)} · Tempo ${fmtExTime(a.timeSpentSec)}${a.shuffled?' · Aleatório':''}</div>
+        </div>
+        <div class="ex-hist-actions">
+          <button type="button" class="fb" onclick="reviewHistAttempt(${idx},'${a.id}')">Revisar</button>
+        </div>
+      </div>`).join('')}
+    </div>
+    ${list.length>10?`<div class="ex-hist-empty">Mostrando as 10 mais recentes de ${list.length}</div>`:''}
+    <div class="ex-hist-ft"><button type="button" class="fb" onclick="clearExHistory(${idx})">Limpar histórico</button></div>`;
+}
+function reviewHistAttempt(idx,attemptId){
+  const attempt=getExHistory(idx).find(a=>a.id===attemptId);
+  if(!attempt){alert('Tentativa não encontrada.');return}
+  const bank=EX[idx]||[];
+  const order=Array.isArray(attempt.qOrder)?attempt.qOrder:[];
+  if(!order.length||order.some(i=>i<0||i>=bank.length||!bank[i])){
+    alert('Não foi possível revisar esta tentativa: a banca de questões mudou desde então.\n\nResultado: '+attempt.pct+'% ('+attempt.correct+'/'+attempt.total+') — '+(attempt.pass?'Aprovado':'Reprovado')+'.');
+    return;
+  }
+  if(exState[idx]&&exState[idx].timer){clearInterval(exState[idx].timer);exState[idx].timer=null;}
+  const qs=order.map(i=>bank[i]);
+  const answers=Array.isArray(attempt.answers)?attempt.answers.slice(0,qs.length):new Array(qs.length).fill(-1);
+  while(answers.length<qs.length)answers.push(-1);
+  exState[idx]={qi:0,answers:answers,submitted:true,timeLeft:0,idx:idx,qs:qs,timer:null,shuffled:!!attempt.shuffled,fromHistory:true};
+  document.getElementById('ex'+(idx+1)+'-start').classList.add('hdn');
+  const area=document.getElementById('ex'+(idx+1)+'-area');
+  area.classList.remove('hdn');
+  reviewExam(idx);
+}
+function renderAllExHistory(){[0,1,2].forEach(renderExHistory)}
+
 // ======================== EXAM ENGINE ========================
 function startExam(idx){
   const area=document.getElementById('ex'+(idx+1)+'-area');
   const start=document.getElementById('ex'+(idx+1)+'-start');
   const shuf=document.getElementById('ex-shuf-'+(idx+1));
+  const shuffled=!!(shuf&&shuf.checked);
   start.classList.add('hdn');
   area.classList.remove('hdn');
   const rawQs=EX[idx];
-  const qs=shuf&&shuf.checked ? shuffleArr(rawQs) : rawQs;
-  exState[idx]={qi:0,answers:new Array(qs.length).fill(-1),submitted:false,timeLeft:75*60,idx:idx,qs:qs,timer:null};
+  const qs=shuffled ? shuffleArr(rawQs) : rawQs;
+  exState[idx]={qi:0,answers:new Array(qs.length).fill(-1),submitted:false,timeLeft:EX_DURATION,idx:idx,qs:qs,timer:null,shuffled:shuffled};
   exState[idx].timer=setInterval(()=>tickExam(idx),1000);
   renderExQ(idx);
 }
@@ -1484,6 +1593,7 @@ function renderExQ(idx){
 function selExOpt(idx,opt){exState[idx].answers[exState[idx].qi]=opt;renderExQ(idx)}
 function submitExam(idx){
   const s=exState[idx];
+  if(!s||s.submitted)return;
   s.submitted=true;
   if(s.timer){clearInterval(s.timer);s.timer=null;}
   const qs=s.qs;
@@ -1495,6 +1605,20 @@ function submitExam(idx){
     if(s.answers[i]===q.a){correct++;byChapter[ch].correct++;}
   }
   const pct=Math.round(correct/qs.length*100),pass=pct>=65;
+  const qOrder=resolveExQOrder(idx,qs);
+  addExAttempt(idx,{
+    id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+    at:new Date().toISOString(),
+    correct:correct,
+    total:qs.length,
+    pct:pct,
+    pass:pass,
+    timeSpentSec:Math.max(0,EX_DURATION-(s.timeLeft||0)),
+    shuffled:!!s.shuffled,
+    byChapter:byChapter,
+    answers:s.answers.slice(),
+    qOrder:qOrder
+  });
   const chNames=['','Fundamentos','Ciclo de Vida','Teste Estático','Análise e Modelagem','Gerenciamento','Ferramentas'];
   let grid='';
   for(let c=1;c<=6;c++){
@@ -1523,6 +1647,7 @@ function resetExam(idx){
   area.classList.add('hdn');area.innerHTML='';
   start.classList.remove('hdn');
   exState[idx]=null;
+  renderExHistory(idx);
 }
 function reviewExam(idx){
   const s=exState[idx],qs=s.qs;
@@ -1543,7 +1668,7 @@ function reviewExam(idx){
       <div class="ex-exp vis"><strong>Explicação:</strong> ${q.e}</div>
     </div>`;
   }
-  html+='<button class="fb" onclick="resetExam('+idx+')" style="margin-top:16px">Refazer Simulado</button>';
+  html+='<button class="fb" onclick="resetExam('+idx+')" style="margin-top:16px">Voltar ao Simulado</button>';
   document.getElementById('ex'+(idx+1)+'-area').innerHTML=html;
 }
 
@@ -1663,7 +1788,7 @@ function hs(){
 
 // ======================== INIT ========================
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){cg();closeSide()}});
-lt();up();bs();
+lt();up();bs();renderAllExHistory();
 
 // ======================== PWA: SERVICE WORKER ========================
 if('serviceWorker' in navigator){
