@@ -3,7 +3,7 @@
 // Cache-first strategy: serve do cache, atualiza em background
 // ============================================================
 
-const CACHE_NAME = 'checkpoint-qa-v1.2';
+const CACHE_NAME = 'checkpoint-qa-v1.3';
 const OFFLINE_PAGE = './index.html';
 
 const ASSETS_TO_CACHE = [

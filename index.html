@@ -226,6 +226,20 @@ h4.sh{margin:16px 0 8px;font-size:15px}
 .ex-hist-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .ex-hist-empty{font-size:13px;color:var(--t3);text-align:center;padding:8px 0}
 .ex-hist-ft{margin-top:12px;text-align:center}
+.hist-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin:20px 0 28px}
+.hist-kpi{padding:14px 16px;border:1px solid var(--bd);border-radius:var(--rs);background:var(--card)}
+.hist-kpi .hk-l{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t3);margin-bottom:6px}
+.hist-kpi .hk-v{font-size:22px;font-weight:700;color:var(--t1);line-height:1.2}
+.hist-insight{padding:14px 16px;border-left:4px solid var(--or);background:var(--orbg);border-radius:0 var(--rs) var(--rs) 0;margin:0 0 10px;font-size:14px;color:var(--t2);line-height:1.6}
+.hist-insight.bad{border-left-color:var(--rd);background:var(--rdbg)}
+.hist-insight.ok{border-left-color:var(--gr);background:var(--grbg)}
+.hist-insight.info{border-left-color:var(--cy);background:var(--cybg)}
+.hist-ch-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.hist-topic{padding:12px 0;border-bottom:1px solid var(--bd);font-size:13px;color:var(--t2);line-height:1.5}
+.hist-topic:last-child{border-bottom:none}
+.hist-topic strong{color:var(--t1)}
+.hist-status{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.hist-status.ok{color:var(--gr)}.hist-status.atencao{color:var(--or)}.hist-status.reforcar{color:var(--rd)}.hist-status.semDados{color:var(--t3)}
 .ch-sel{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin:24px 0}
 .ch-sel-btn{padding:20px;border-radius:var(--r);border:2px solid var(--bd);background:var(--card);cursor:pointer;transition:all var(--tr);text-align:center}
 .ch-sel-btn:hover{border-color:var(--ac);transform:translateY(-2px)}
@@ -255,6 +269,7 @@ h4.sh{margin:16px 0 8px;font-size:15px}
     <div class="ni" data-ch="9" onclick="go(9)"><div class="ni-i">&#128221;</div><div><div>Simulado 2</div><div class="ni-t">40 questões</div></div></div>
     <div class="ni" data-ch="12" onclick="go(12)"><div class="ni-i">&#127942;</div><div><div>Simulado 3 (BSTQB)</div><div class="ni-t">40 questões oficiais</div></div></div>
     <div class="ni" data-ch="10" onclick="go(10)"><div class="ni-i">&#127919;</div><div><div>Treino por Capítulo</div><div class="ni-t">Prática</div></div></div>
+    <div class="ni" data-ch="13" onclick="go(13)"><div class="ni-i">&#128202;</div><div><div>Histórico</div><div class="ni-t">Análise das tentativas</div></div></div>
     <div class="nsep"></div>
     <div class="ni" data-ch="11" onclick="go(11)"><div class="ni-i">&#128279;</div><div><div>Recursos e Links</div><div class="ni-t">Referências</div></div></div>
   </nav>
@@ -1015,6 +1030,12 @@ h4.sh{margin:16px 0 8px;font-size:15px}
 <div id="ex3-area" class="hdn"></div>
 </div>
 
+<!-- ==================== HISTÓRICO / ANÁLISE ==================== -->
+<div class="ct cc hdn" id="ch13">
+<div class="ch"><span class="badge" style="background:var(--cybg);color:var(--cy)">Histórico</span><h2>Histórico de Tentativas</h2><div class="cmeta"><span>Análise fria com base nos simulados neste aparelho</span></div></div>
+<div id="hist-page"></div>
+</div>
+
 <!-- ==================== RECURSOS ==================== -->
 <div class="ct cc hdn" id="ch11">
 <div class="ch"><span class="badge" style="background:var(--grbg);color:var(--gr)">Recursos</span><h2>Recursos e Links Úteis</h2></div>
@@ -1367,6 +1388,7 @@ function go(n){
   if(v)v.classList.add('act');
   if(n===7){initFC();sf();}
   if(n===10)initTrain();
+  if(n===13)renderHistPage();
   closeSide();
   window.scrollTo({top:0});
 }
@@ -1463,6 +1485,13 @@ function clearExHistory(idx){
   data[String(idx)]=[];
   saveExHistory(data);
   renderExHistory(idx);
+  if(cch===13)renderHistPage();
+}
+function clearAllExHistory(){
+  if(!confirm('Limpar TODO o histórico de simulados neste aparelho? Esta ação não pode ser desfeita.'))return;
+  saveExHistory({'0':[],'1':[],'2':[]});
+  renderAllExHistory();
+  if(cch===13)renderHistPage();
 }
 function fmtExDate(iso){
   try{return new Date(iso).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}catch(e){return iso}
@@ -1481,12 +1510,94 @@ function resolveExQOrder(idx,qs){
     return i;
   });
 }
+const EX_NAMES=['Simulado 1','Simulado 2','Simulado 3 (BSTQB)'];
+const EX_CH_IDS=[8,9,12];
+const CH_NAMES=['','Fundamentos de Teste','Testes no Ciclo de Vida','Teste Estático','Análise e Modelagem','Gerenciamento de Teste','Ferramentas de Teste'];
+let histFilter='all';
+function getAllExAttempts(){
+  const out=[];
+  for(let idx=0;idx<3;idx++){
+    getExHistory(idx).forEach(a=>out.push({idx,attempt:a}));
+  }
+  out.sort((a,b)=>String(b.attempt.at||'').localeCompare(String(a.attempt.at||'')));
+  return out;
+}
+function analyzeExHistory(filter){
+  const all=getAllExAttempts();
+  const rows=filter==='all'?all:all.filter(r=>r.idx===Number(filter));
+  const stats={total:rows.length,passed:0,bestPct:0,avgPct:0};
+  const chapterMap={};
+  for(let c=1;c<=6;c++)chapterMap[c]={c,name:CH_NAMES[c],correct:0,total:0,attempts:0};
+  const wrongMap={};
+  let pctSum=0;
+  rows.forEach(({idx,attempt})=>{
+    const pct=Number(attempt.pct)||0;
+    pctSum+=pct;
+    if(pct>stats.bestPct)stats.bestPct=pct;
+    if(attempt.pass)stats.passed++;
+    const bc=attempt.byChapter||{};
+    for(let c=1;c<=6;c++){
+      const d=bc[c]||bc[String(c)];
+      if(!d||!d.total)continue;
+      chapterMap[c].correct+=d.correct||0;
+      chapterMap[c].total+=d.total||0;
+      chapterMap[c].attempts++;
+    }
+    const bank=EX[idx]||[];
+    const order=Array.isArray(attempt.qOrder)?attempt.qOrder:[];
+    const answers=Array.isArray(attempt.answers)?attempt.answers:[];
+    order.forEach((qi,pos)=>{
+      const q=bank[qi];
+      if(!q)return;
+      const ua=answers[pos];
+      const wrong=ua!==q.a;
+      if(!wrong)return;
+      const key=idx+':'+qi;
+      if(!wrongMap[key])wrongMap[key]={idx,qi,c:q.c,q:q.q,wrong:0,seen:0};
+      wrongMap[key].wrong++;
+      wrongMap[key].seen++;
+    });
+  });
+  if(stats.total)stats.avgPct=Math.round(pctSum/stats.total);
+  const chapters=Object.values(chapterMap).map(ch=>{
+    const pct=ch.total?Math.round(ch.correct/ch.total*100):null;
+    let status='semDados';
+    if(pct!==null){
+      if(pct>=65)status='ok';
+      else if(pct>=50)status='atencao';
+      else status='reforcar';
+    }
+    return {...ch,pct,status};
+  });
+  const ranked=[...chapters].filter(c=>c.total>0).sort((a,b)=>(a.pct??999)-(b.pct??999));
+  const insights=[];
+  if(!stats.total){
+    insights.push({level:'info',text:'Ainda não há tentativas. Finalize um simulado para gerar a análise.'});
+  }else{
+    const passRate=Math.round(stats.passed/stats.total*100);
+    insights.push({level:passRate>=65?'ok':passRate>=40?'atencao':'bad',text:`Taxa de aprovação: ${passRate}% (${stats.passed}/${stats.total}). Média geral: ${stats.avgPct}% · Melhor: ${stats.bestPct}%.`});
+    ranked.filter(c=>c.status==='reforcar').slice(0,3).forEach(c=>{
+      insights.push({level:'bad',text:`Cap ${c.c} — ${c.name} está em ${c.pct}% (${c.correct}/${c.total}). Priorize estudar o capítulo, flashcards e treino.`});
+    });
+    ranked.filter(c=>c.status==='atencao').slice(0,2).forEach(c=>{
+      insights.push({level:'atencao',text:`Cap ${c.c} — ${c.name} está em ${c.pct}%, abaixo dos 65% de corte. Reforce com treino por capítulo.`});
+    });
+    const strong=ranked.filter(c=>c.status==='ok').sort((a,b)=>b.pct-a.pct)[0];
+    if(strong)insights.push({level:'ok',text:`Ponto forte: Cap ${strong.c} — ${strong.name} (${strong.pct}%). Mantenha a revisão espaçada.`});
+    if(ranked.length&&!ranked.some(c=>c.status!=='ok'))insights.push({level:'ok',text:'Todos os capítulos com dados estão no nível de aprovação (≥65%). Foque em manter ritmo e revisar erros pontuais.'});
+  }
+  const wrongList=Object.values(wrongMap).sort((a,b)=>b.wrong-a.wrong||a.c-b.c);
+  const multi=wrongList.filter(t=>t.wrong>=2);
+  const weakTopics=(multi.length?multi:wrongList.slice(0,3)).slice(0,5);
+  return{stats,chapters,ranked,insights:insights.slice(0,5),weakTopics,rows};
+}
 function renderExHistory(idx){
   const el=document.getElementById('ex-hist-'+idx);
   if(!el)return;
   const list=getExHistory(idx);
   if(!list.length){
-    el.innerHTML='<div class="ex-hist-empty">Nenhuma tentativa salva neste aparelho</div>';
+    el.innerHTML=`<div class="ex-hist-empty">Nenhuma tentativa salva neste aparelho</div>
+      <div class="ex-hist-ft"><button type="button" class="fb" onclick="go(13)">Ver análise completa</button></div>`;
     return;
   }
   const best=Math.max(...list.map(a=>a.pct||0));
@@ -1503,12 +1614,29 @@ function renderExHistory(idx){
           <div style="font-size:12px;color:var(--t3)">${fmtExDate(a.at)} · Tempo ${fmtExTime(a.timeSpentSec)}${a.shuffled?' · Aleatório':''}</div>
         </div>
         <div class="ex-hist-actions">
-          <button type="button" class="fb" onclick="reviewHistAttempt(${idx},'${a.id}')">Revisar</button>
+          <button type="button" class="fb" onclick="openHistReview(${idx},'${a.id}')">Revisar</button>
         </div>
       </div>`).join('')}
     </div>
     ${list.length>10?`<div class="ex-hist-empty">Mostrando as 10 mais recentes de ${list.length}</div>`:''}
-    <div class="ex-hist-ft"><button type="button" class="fb" onclick="clearExHistory(${idx})">Limpar histórico</button></div>`;
+    <div class="ex-hist-ft">
+      <button type="button" class="fb pr" onclick="go(13)">Ver análise completa</button>
+      <button type="button" class="fb" onclick="clearExHistory(${idx})" style="margin-left:8px">Limpar histórico</button>
+    </div>`;
+}
+function openHistReview(idx,attemptId){
+  const ch=EX_CH_IDS[idx];
+  if(cch!==ch){
+    document.querySelectorAll('.cc').forEach(e=>e.classList.add('hdn'));
+    const t=document.getElementById('ch'+ch);
+    if(t)t.classList.remove('hdn');
+    document.querySelectorAll('.ni').forEach(e=>e.classList.remove('act'));
+    const v=document.querySelector(`.ni[data-ch="${ch}"]`);
+    if(v)v.classList.add('act');
+    cch=ch;
+  }
+  reviewHistAttempt(idx,attemptId);
+  window.scrollTo({top:0});
 }
 function reviewHistAttempt(idx,attemptId){
   const attempt=getExHistory(idx).find(a=>a.id===attemptId);
@@ -1528,6 +1656,74 @@ function reviewHistAttempt(idx,attemptId){
   const area=document.getElementById('ex'+(idx+1)+'-area');
   area.classList.remove('hdn');
   reviewExam(idx);
+}
+function setHistFilter(f){histFilter=f;renderHistPage()}
+function renderHistPage(){
+  const el=document.getElementById('hist-page');
+  if(!el)return;
+  const analysis=analyzeExHistory(histFilter);
+  const{stats,chapters,insights,weakTopics,rows}=analysis;
+  if(!getAllExAttempts().length){
+    el.innerHTML=`
+      <div class="start-card" style="margin-top:8px">
+        <h3>Nenhuma tentativa ainda</h3>
+        <p>Finalize um simulado para ver o histórico e a análise dos capítulos a reforçar.</p>
+        <button class="fb pr start-btn" onclick="go(8)">Ir ao Simulado 1</button>
+      </div>`;
+    return;
+  }
+  const filters=[
+    {id:'all',label:'Todos'},
+    {id:'0',label:'Simulado 1'},
+    {id:'1',label:'Simulado 2'},
+    {id:'2',label:'Simulado 3'}
+  ];
+  const statusLabel={ok:'OK',atencao:'Atenção',reforcar:'Reforçar',semDados:'Sem dados'};
+  el.innerHTML=`
+    <div class="tabs">${filters.map(f=>`<button type="button" class="tab${String(histFilter)===f.id?' act':''}" onclick="setHistFilter('${f.id}')">${f.label}</button>`).join('')}</div>
+    <div class="hist-kpis">
+      <div class="hist-kpi"><div class="hk-l">Tentativas</div><div class="hk-v">${stats.total}</div></div>
+      <div class="hist-kpi"><div class="hk-l">Aprovações</div><div class="hk-v">${stats.passed}</div></div>
+      <div class="hist-kpi"><div class="hk-l">Melhor</div><div class="hk-v">${stats.bestPct}%</div></div>
+      <div class="hist-kpi"><div class="hk-l">Média</div><div class="hk-v">${stats.avgPct}%</div></div>
+    </div>
+    <div class="st">Análise fria</div>
+    <div>${insights.map(i=>`<div class="hist-insight ${i.level==='atencao'?'':i.level==='bad'?'bad':i.level==='ok'?'ok':'info'}">${i.text}</div>`).join('')}</div>
+    <div class="st">Desempenho por capítulo</div>
+    <div class="res-grid">${chapters.map(c=>{
+      const pct=c.pct===null?'—':c.pct+'%';
+      const bar=c.pct===null?0:c.pct;
+      const color=c.status==='ok'?'var(--gr)':c.status==='atencao'?'var(--or)':c.status==='reforcar'?'var(--rd)':'var(--bd2)';
+      return `<div class="res-ch">
+        <h4>Cap ${c.c} — ${c.name}</h4>
+        <div>${c.total?`${c.correct}/${c.total}`:'—'}</div>
+        <div class="res-bar"><div class="res-fill" style="width:${bar}%;background:${color}"></div></div>
+        <div class="res-pct">${pct} · <span class="hist-status ${c.status}">${statusLabel[c.status]}</span></div>
+        ${c.status==='reforcar'||c.status==='atencao'?`<div class="hist-ch-actions">
+          <button type="button" class="fb" onclick="go(${c.c})">Estudar</button>
+          <button type="button" class="fb" onclick="go(7)">Flashcards</button>
+          <button type="button" class="fb" onclick="go(10)">Treinar</button>
+        </div>`:''}
+      </div>`;
+    }).join('')}</div>
+    ${weakTopics.length?`<div class="st">Assuntos / questões a reforçar</div>
+      <div>${weakTopics.map(t=>`<div class="hist-topic"><strong>Cap ${t.c}</strong> · errada ${t.wrong}× · ${EX_NAMES[t.idx]}<br>${t.q.length>140?t.q.slice(0,140)+'…':t.q}</div>`).join('')}</div>`:''}
+    <div class="st">Tentativas</div>
+    ${!rows.length?'<div class="ex-hist-empty">Nenhuma tentativa neste filtro</div>':`
+      <div class="ex-hist-list" style="max-height:none">${rows.map(({idx,attempt:a})=>`
+        <div class="ex-hist-item">
+          <div class="ex-hist-meta">
+            <div><strong>${EX_NAMES[idx]}</strong> · ${a.pct}% · ${a.correct}/${a.total} · <span class="ex-hist-badge ${a.pass?'pass':'fail'}">${a.pass?'Aprovado':'Reprovado'}</span></div>
+            <div style="font-size:12px;color:var(--t3)">${fmtExDate(a.at)} · Tempo ${fmtExTime(a.timeSpentSec)}${a.shuffled?' · Aleatório':''}</div>
+          </div>
+          <div class="ex-hist-actions">
+            <button type="button" class="fb" onclick="openHistReview(${idx},'${a.id}')">Revisar</button>
+          </div>
+        </div>`).join('')}
+      </div>`}
+    <div class="ex-hist-ft" style="margin-top:20px">
+      <button type="button" class="fb" onclick="clearAllExHistory()">Limpar todo o histórico</button>
+    </div>`;
 }
 function renderAllExHistory(){[0,1,2].forEach(renderExHistory)}
 
